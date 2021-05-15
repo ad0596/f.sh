@@ -3,11 +3,9 @@ package com.client.app.AppClient.DTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 
-@Component
 public class SenderReqData implements Serializable {
 
     private static final long serialVersionUID = -6074943763293123482L;

@@ -4,11 +4,10 @@ import com.client.app.AppClient.Util.UserType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 
-@Component
+
 public class User implements Serializable {
 
     private static final long serialVersionUID = -4402865447825515728L;

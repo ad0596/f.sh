@@ -4,10 +4,12 @@ import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.ReceiverService;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 
+@Component
 public class ReceiverServiceImpl implements ReceiverService {
 
     @Value("${destFilePath}")

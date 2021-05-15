@@ -3,13 +3,13 @@ package com.client.app.AppClient.Service.Impl;
 import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.CommonService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
 
-@Service
-public class CommonSeerviceImpl implements CommonService {
+@Component
+public class CommonServiceImpl implements CommonService {
 
     @Value("${serverAddress}")
     private static final String serverAddress = null;

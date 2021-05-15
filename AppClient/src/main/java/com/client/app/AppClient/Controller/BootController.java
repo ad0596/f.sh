@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController("/fshClient")
-public class ClientController {
+public class BootController {
 
     @Autowired
     SenderService senderService;
@@ -19,7 +19,7 @@ public class ClientController {
     @Autowired
     ReceiverService receiverService;
 
-    // SENDER
+    // SERVER
     @PostMapping(path = "/shareRcvrInfo", consumes = "application/json")
     public void getReceiverInfo(User rcvr) {
         senderService.initFS(rcvr);

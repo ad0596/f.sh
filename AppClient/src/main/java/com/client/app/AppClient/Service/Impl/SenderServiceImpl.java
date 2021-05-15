@@ -5,14 +5,14 @@ import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.SenderService;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
 
-@Service
+@Component
 public class SenderServiceImpl implements SenderService {
 
     @Value("${srcFilePath}")
