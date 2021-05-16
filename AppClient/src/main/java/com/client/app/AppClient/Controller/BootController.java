@@ -1,6 +1,6 @@
 package com.client.app.AppClient.Controller;
 
-import com.client.app.AppClient.DTO.SenderReqData;
+import com.client.app.AppClient.DTO.ReqData;
 import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.CommonService;
 import com.client.app.AppClient.Service.ReceiverService;
@@ -27,7 +27,7 @@ public class BootController {
 
     // SENDER
     @PostMapping(path = "/reqReceiver", consumes = "application/json")
-    public boolean reqReceiver(SenderReqData sndrReqData) {
+    public boolean reqReceiver(ReqData sndrReqData) {
         return senderService.reqReceiver(sndrReqData);
     }
 
@@ -39,8 +39,8 @@ public class BootController {
 
     // RECEIVER
     @PostMapping(path = "/reqSender", consumes = "application/json")
-    public boolean reqSender(User user) {
-        return receiverService.reqSender(user);
+    public boolean reqSender(ReqData rcvrReqData) {
+        return receiverService.reqSender(rcvrReqData);
     }
 
     // RECEIVER

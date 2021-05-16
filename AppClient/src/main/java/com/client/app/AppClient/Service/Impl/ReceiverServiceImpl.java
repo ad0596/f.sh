@@ -1,6 +1,6 @@
 package com.client.app.AppClient.Service.Impl;
 
-import com.client.app.AppClient.DTO.User;
+import com.client.app.AppClient.DTO.ReqData;
 import com.client.app.AppClient.Service.ReceiverService;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +20,10 @@ public class ReceiverServiceImpl implements ReceiverService {
     private final OkHttpClient client = new OkHttpClient();
 
     @Override
-    public boolean reqSender(User user) {
+    public boolean reqSender(ReqData rcvrReqData) {
         //logic to req server to find sender
         String url = "https://" + serverAddress + "/reqSender";
-        String reqDataJson = user.toString();
+        String reqDataJson = rcvrReqData.getReceiver().toString();
         RequestBody reqBody = RequestBody.create(
                 reqDataJson, MediaType.parse("application/json"));
         try {
@@ -32,11 +32,11 @@ public class ReceiverServiceImpl implements ReceiverService {
                     .post(reqBody).build();
 
             ResponseBody responseBody = client.newCall(req).execute().body();
+            return responseBody.string().equals("true");
         } catch (Exception ex) {
             System.out.println(ex);
             return false;
         }
-        return true;
     }
 
     @Override
