@@ -18,7 +18,6 @@ public class ReceiverServiceImpl implements ReceiverService {
     private String serverAddress = null;
 
     private final OkHttpClient client = new OkHttpClient();
-    private OutputStream outputStream = null;
 
     @Override
     public boolean reqSender(ReqData rcvrReqData) {
@@ -41,21 +40,12 @@ public class ReceiverServiceImpl implements ReceiverService {
     }
 
     @Override
-    public void initializeFileWriter() {
-        try {
-            outputStream = new FileOutputStream(filePath);
-            System.out.println("FW initialized successfully!!" + outputStream.toString());
-        } catch (Exception ex) {
-            System.out.println(ex);
-        }
-    }
-
-    @Override
     public boolean getShard(byte[] shard) {
         //logic to save file shard
         try {
-            System.out.println(outputStream.toString());
-            outputStream.write(shard, 0, shard.length);
+            FileOutputStream fos = new FileOutputStream(filePath, true);
+            fos.write(shard);
+            fos.close();
         } catch (Exception ex) {
             System.out.println(ex);
             return false;

@@ -49,9 +49,4 @@ public class BootController {
         return receiverService.getShard(shard);
     }
 
-    @GetMapping(value = "/intiateFileWriter")
-    public void initiateFW () {
-        receiverService.initializeFileWriter();
-    }
-    
 }

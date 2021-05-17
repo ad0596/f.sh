@@ -67,8 +67,6 @@ public class SenderServiceImpl implements SenderService {
                 //
                 if(responseBody.string().equals("false")) {
                     System.out.println("Failure at receiver's end. Re-Sending shard.");
-                    //re-send same shard
-                    //responseBody = client.newCall(req).execute().body();
                     return false;
                 }
                 System.out.println("count:" + count++ + "\nreadLen: " + read);
