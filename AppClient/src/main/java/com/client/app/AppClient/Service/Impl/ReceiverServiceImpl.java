@@ -13,17 +13,18 @@ import java.io.OutputStream;
 public class ReceiverServiceImpl implements ReceiverService {
 
     @Value("${destFilePath}")
-    private static String filePath = null;
+    private String filePath = null;
     @Value("${serverAddress}")
-    private static final String serverAddress = null;
+    private String serverAddress = null;
 
     private final OkHttpClient client = new OkHttpClient();
+    private OutputStream outputStream = null;
 
     @Override
     public boolean reqSender(ReqData rcvrReqData) {
         //logic to req server to find sender
-        String url = "https://" + serverAddress + "/reqSender";
-        String reqDataJson = rcvrReqData.getReceiver().toString();
+        String url = "http://" + serverAddress + "/fshServer/reqSender";
+        String reqDataJson = rcvrReqData.toString();
         RequestBody reqBody = RequestBody.create(
                 reqDataJson, MediaType.parse("application/json"));
         try {
@@ -32,7 +33,7 @@ public class ReceiverServiceImpl implements ReceiverService {
                     .post(reqBody).build();
 
             ResponseBody responseBody = client.newCall(req).execute().body();
-            return responseBody.string().equals("true");
+            return responseBody.string().toString().equals("true");
         } catch (Exception ex) {
             System.out.println(ex);
             return false;
@@ -40,10 +41,20 @@ public class ReceiverServiceImpl implements ReceiverService {
     }
 
     @Override
+    public void initializeFileWriter() {
+        try {
+            outputStream = new FileOutputStream(filePath);
+            System.out.println("FW initialized successfully!!" + outputStream.toString());
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+    }
+
+    @Override
     public boolean getShard(byte[] shard) {
         //logic to save file shard
         try {
-            OutputStream outputStream = new FileOutputStream(filePath);
+            System.out.println(outputStream.toString());
             outputStream.write(shard, 0, shard.length);
         } catch (Exception ex) {
             System.out.println(ex);

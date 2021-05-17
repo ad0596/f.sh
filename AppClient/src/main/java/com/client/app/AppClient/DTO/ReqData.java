@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import java.io.Serializable;
 
-public class SenderReqData implements Serializable {
+public class ReqData implements Serializable {
 
     private static final long serialVersionUID = -6074943763293123482L;
     private User sender;

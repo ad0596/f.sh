@@ -6,10 +6,10 @@ import com.client.app.AppClient.Service.CommonService;
 import com.client.app.AppClient.Service.ReceiverService;
 import com.client.app.AppClient.Service.SenderService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-@RestController("/fshClient")
+@RestController
+@RequestMapping(value = "/fshClient")
 public class BootController {
 
     @Autowired
@@ -20,33 +20,38 @@ public class BootController {
     ReceiverService receiverService;
 
     // SERVER
-    @PostMapping(path = "/shareRcvrInfo", consumes = "application/json")
-    public void getReceiverInfo(User rcvr) {
-        senderService.initFS(rcvr);
+    @PostMapping(path = "/shareFile", consumes = "application/json")
+    public boolean shareFile(@RequestBody User rcvr) {
+        return senderService.initFS(rcvr);
     }
 
     // SENDER
-    @PostMapping(path = "/reqReceiver", consumes = "application/json")
-    public boolean reqReceiver(ReqData sndrReqData) {
+    @PostMapping(path = "/reqReceiver", consumes = "application/json", produces = "application/json")
+    public boolean reqReceiver(@RequestBody ReqData sndrReqData) {
         return senderService.reqReceiver(sndrReqData);
     }
 
     // COMMON
     @PostMapping(path =  "/disconnect", consumes = "application/json")
-    public void disconnect(User user) {
-        commonService.disconnect(user);
+    public boolean disconnect(@RequestBody User user) {
+        return commonService.disconnect(user);
     }
 
     // RECEIVER
-    @PostMapping(path = "/reqSender", consumes = "application/json")
-    public boolean reqSender(ReqData rcvrReqData) {
+    @PostMapping(path = "/reqSender", consumes = "application/json", produces = "application/json")
+    public boolean reqSender(@RequestBody ReqData rcvrReqData) {
         return receiverService.reqSender(rcvrReqData);
     }
 
     // RECEIVER
-    @PostMapping(path = "/getFileShard")
-    public boolean getFileShard(byte [] shard) {
+    @PostMapping(path = "/getFileShard", produces = "application/json")
+    public boolean getFileShard(@RequestBody byte [] shard) {
         return receiverService.getShard(shard);
+    }
+
+    @GetMapping(value = "/intiateFileWriter")
+    public void initiateFW () {
+        receiverService.initializeFileWriter();
     }
     
 }

@@ -1,6 +1,6 @@
 package com.client.app.AppClient.Service.Impl;
 
-import com.client.app.AppClient.DTO.SenderReqData;
+import com.client.app.AppClient.DTO.ReqData;
 import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.SenderService;
 import okhttp3.*;
@@ -16,16 +16,16 @@ import java.io.InputStream;
 public class SenderServiceImpl implements SenderService {
 
     @Value("${srcFilePath}")
-    private static String filePath = null;
+    private String filePath = null;
     @Value("${serverAddress}")
-    private static final String serverAddress = null;
+    private String serverAddress = null;
 
     private final OkHttpClient client = new OkHttpClient();
 
     @Override
-    public boolean reqReceiver(SenderReqData senderReqData) {
+    public boolean reqReceiver(ReqData senderReqData) {
         //logic to send req to server for receiver
-        String url = "https://" + serverAddress +"/reqReceiver";
+        String url = "http://" + serverAddress +"/fshServer/reqReceiver";
         String reqDataJson = senderReqData.toString();
         RequestBody reqBody = RequestBody.create(
                 reqDataJson, MediaType.parse("application/json"));
@@ -43,34 +43,40 @@ public class SenderServiceImpl implements SenderService {
     }
 
     @Override
-    public void initFS(User rcvr) {
-        //logic to upload file - sharding -sending shards to receiver
-
+    public boolean initFS(User rcvr) {
+        //logic to upload file - sharding - sending shards to receiver
         try {
             InputStream inputStream = new FileInputStream(filePath);
             BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
             //OutputStream outputStream = new FileOutputStream(target);
 
+            int count = 0;
             byte[] shard = new byte[4 * 1024];
-            while ((bufferedInputStream.read(shard, 0, shard.length)) != -1) {
+            RequestBody reqBody = RequestBody.create(shard, MediaType.parse("text/plain; charset=utf-8"));
+            int read;
+            while ((read = bufferedInputStream.read(shard, 0, shard.length)) != -1) {
                 //logic to send this file shard to receiver
 
-                String url = "https://" + rcvr.getAddress() + "/getFileShard";
+                String url = "http://" + rcvr.getAddress() + "/fshClient/getFileShard";
                 Request req = new Request.Builder()
                         .url(url)
-                        .get().build();
+                        .post(reqBody).build();
 
                 ResponseBody responseBody = client.newCall(req).execute().body();
 
-                while(responseBody.string().equals("false")) {
+                //
+                if(responseBody.string().equals("false")) {
                     System.out.println("Failure at receiver's end. Re-Sending shard.");
                     //re-send same shard
-                    responseBody = client.newCall(req).execute().body();
+                    //responseBody = client.newCall(req).execute().body();
+                    return false;
                 }
+                System.out.println("count:" + count++ + "\nreadLen: " + read);
             }
-
+            return true;
         } catch (Exception ex) {
                 System.out.println(ex);
+                return false;
         }
     }
 
