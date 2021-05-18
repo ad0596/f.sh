@@ -32,6 +32,7 @@ public class BootController {
     // DISCONNECT
     @PostMapping(value = "/disconnect", consumes = "application/json", produces = "application/json")
     public @ResponseBody boolean disconnect(User user) {
+	// TODO: Implement disconnect method
         return false;
     }
 }
