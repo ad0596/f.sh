@@ -1,5 +1,6 @@
 package com.client.app.AppClient.Service.Impl;
 
+import com.client.app.AppClient.DTO.FshReq;
 import com.client.app.AppClient.DTO.ReqData;
 import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.SenderService;
@@ -15,8 +16,6 @@ import java.io.InputStream;
 @Component
 public class SenderServiceImpl implements SenderService {
 
-    @Value("${srcFilePath}")
-    private String filePath = null;
     @Value("${serverAddress}")
     private String serverAddress = null;
 
@@ -43,33 +42,31 @@ public class SenderServiceImpl implements SenderService {
     }
 
     @Override
-    public boolean initFS(User rcvr) {
+    public boolean initFS(FshReq fshReq) {
+        String fileName = fshReq.getFilePath().substring(fshReq.getFilePath().lastIndexOf("/")+1);
         //logic to upload file - sharding - sending shards to receiver
         try {
-            InputStream inputStream = new FileInputStream(filePath);
+            InputStream inputStream = new FileInputStream(fshReq.getFilePath());
             BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-            //OutputStream outputStream = new FileOutputStream(target);
 
-            int count = 0;
             byte[] shard = new byte[4 * 1024];
             RequestBody reqBody = RequestBody.create(shard, MediaType.parse("text/plain; charset=utf-8"));
-            int read;
-            while ((read = bufferedInputStream.read(shard, 0, shard.length)) != -1) {
-                //logic to send this file shard to receiver
 
-                String url = "http://" + rcvr.getAddress() + "/fshClient/getFileShard";
+            while (bufferedInputStream.read(shard, 0, shard.length) != -1) {
+
+                //logic to send this file shard to receiver
+                String url = "http://" + fshReq.getReceiver().getAddress() + "/fshClient/getFileShard";
                 Request req = new Request.Builder()
+                        .header("fileName", fileName)
                         .url(url)
                         .post(reqBody).build();
 
                 ResponseBody responseBody = client.newCall(req).execute().body();
 
-                //
                 if(responseBody.string().equals("false")) {
-                    System.out.println("Failure at receiver's end. Re-Sending shard.");
+                    System.out.println("Failure at receiver's end.");
                     return false;
                 }
-                System.out.println("count:" + count++ + "\nreadLen: " + read);
             }
             return true;
         } catch (Exception ex) {

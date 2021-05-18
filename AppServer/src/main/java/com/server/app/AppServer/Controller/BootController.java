@@ -1,6 +1,7 @@
 package com.server.app.AppServer.Controller;
 
 import com.server.app.AppServer.DTO.ReqData;
+import com.server.app.AppServer.DTO.User;
 import com.server.app.AppServer.Service.MainService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -29,4 +30,8 @@ public class BootController {
     }
 
     // DISCONNECT
+    @PostMapping(value = "/disconnect", consumes = "application/json", produces = "application/json")
+    public @ResponseBody boolean disconnect(User user) {
+        return false;
+    }
 }

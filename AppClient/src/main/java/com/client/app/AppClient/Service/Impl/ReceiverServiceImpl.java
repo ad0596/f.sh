@@ -12,8 +12,8 @@ import java.io.OutputStream;
 @Component
 public class ReceiverServiceImpl implements ReceiverService {
 
-    @Value("${destFilePath}")
-    private String filePath = null;
+    @Value("${destFileDir}")
+    private String fileDir = null;
     @Value("${serverAddress}")
     private String serverAddress = null;
 
@@ -40,10 +40,10 @@ public class ReceiverServiceImpl implements ReceiverService {
     }
 
     @Override
-    public boolean getShard(byte[] shard) {
+    public boolean getShard(byte[] shard, String fileName) {
         //logic to save file shard
         try {
-            FileOutputStream fos = new FileOutputStream(filePath, true);
+            FileOutputStream fos = new FileOutputStream(fileDir + fileName, true);
             fos.write(shard);
             fos.close();
         } catch (Exception ex) {

@@ -6,5 +6,5 @@ import org.springframework.stereotype.Service;
 @Service
 public interface ReceiverService {
     public boolean reqSender(ReqData rcvrReqData);
-    public boolean getShard(byte [] shard);
+    public boolean getShard(byte [] shard, String fileName);
 }
