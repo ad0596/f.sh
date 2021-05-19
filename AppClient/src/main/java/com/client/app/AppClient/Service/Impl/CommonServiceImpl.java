@@ -4,11 +4,17 @@ import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.CommonService;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+
+import java.util.logging.Logger;
 
 
 @Component
 public class CommonServiceImpl implements CommonService {
+
+    private static final Logger LOGGER = Logger.getLogger(CommonServiceImpl.class.getName());
 
     @Value("${serverAddress}")
     private static final String serverAddress = null;
@@ -16,9 +22,8 @@ public class CommonServiceImpl implements CommonService {
     private final OkHttpClient client = new OkHttpClient();
 
     @Override
-    public boolean disconnect(User user) {
+    public ResponseEntity<?> disconnect(User user) {
         //req server to get disconnected
-        // TODO: Notify both sender and receiver about partner getting disconnected
         String reqDataJson = user.toString();
         String url = "http://" + serverAddress + "/fshServer/disconnect";
         RequestBody reqBody = RequestBody.create(
@@ -28,12 +33,13 @@ public class CommonServiceImpl implements CommonService {
                     .url(url)
                     .post(reqBody).build();
 
-            ResponseBody responseBody = client.newCall(req).execute().body();
-            return responseBody.string().equals("true");
+            Response response = client.newCall(req).execute();
+            return ResponseEntity.status(response.code()).body(response.body().string());
         } catch (Exception ex) {
-            System.out.println(ex);
+            LOGGER.info(ex.toString());
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("NACK: " + ex.toString());
         }
-        return false;
     }
 
 }

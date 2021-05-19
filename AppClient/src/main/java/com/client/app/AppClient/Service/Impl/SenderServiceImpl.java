@@ -2,19 +2,23 @@ package com.client.app.AppClient.Service.Impl;
 
 import com.client.app.AppClient.DTO.FshReq;
 import com.client.app.AppClient.DTO.ReqData;
-import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.SenderService;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.logging.Logger;
 
 
 @Component
 public class SenderServiceImpl implements SenderService {
+
+    private static final Logger LOGGER = Logger.getLogger(SenderServiceImpl.class.getName());
 
     @Value("${serverAddress}")
     private String serverAddress = null;
@@ -22,27 +26,27 @@ public class SenderServiceImpl implements SenderService {
     private final OkHttpClient client = new OkHttpClient();
 
     @Override
-    public boolean reqReceiver(ReqData senderReqData) {
+    public ResponseEntity<?> reqReceiver(ReqData senderReqData) {
         //logic to send req to server for receiver
         String url = "http://" + serverAddress +"/fshServer/reqReceiver";
         String reqDataJson = senderReqData.toString();
-        RequestBody reqBody = RequestBody.create(
-                reqDataJson, MediaType.parse("application/json"));
+        RequestBody reqBody = RequestBody.create(reqDataJson, MediaType.parse("application/json"));
         try {
             Request req = new Request.Builder()
                     .url(url)
                     .post(reqBody).build();
 
-            ResponseBody responseBody = client.newCall(req).execute().body();
+            Response response = client.newCall(req).execute();
+            return ResponseEntity.status(response.code()).body(response.body().string());
         } catch (Exception ex) {
-            System.out.println(ex);
-            return false;
+            LOGGER.info(ex.toString());
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("NACK: " + ex);
         }
-        return true;
     }
 
     @Override
-    public boolean initFS(FshReq fshReq) {
+    public ResponseEntity<?> initFS(FshReq fshReq) {
         String fileName = fshReq.getFilePath().substring(fshReq.getFilePath().lastIndexOf("/")+1);
         //logic to upload file - sharding - sending shards to receiver
         try {
@@ -53,7 +57,6 @@ public class SenderServiceImpl implements SenderService {
             RequestBody reqBody = RequestBody.create(shard, MediaType.parse("text/plain; charset=utf-8"));
 
             while (bufferedInputStream.read(shard, 0, shard.length) != -1) {
-
                 //logic to send this file shard to receiver
                 String url = "http://" + fshReq.getReceiver().getAddress() + "/fshClient/getFileShard";
                 Request req = new Request.Builder()
@@ -61,17 +64,18 @@ public class SenderServiceImpl implements SenderService {
                         .url(url)
                         .post(reqBody).build();
 
-                ResponseBody responseBody = client.newCall(req).execute().body();
+                Response response = client.newCall(req).execute();
 
-                if(responseBody.string().equals("false")) {
-                    System.out.println("Failure at receiver's end.");
-                    return false;
+                if(response.body().string().contains("NACK")) {
+                    LOGGER.info("F.SH failure at receiver's end.");
+                    return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("NACK: F.SH failure at receiver's end.");
                 }
             }
-            return true;
+            return ResponseEntity.status(HttpStatus.OK).body("ACK");
         } catch (Exception ex) {
-                System.out.println(ex);
-                return false;
+            LOGGER.info(ex.toString());
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("NACK: " + ex);
         }
     }
 
