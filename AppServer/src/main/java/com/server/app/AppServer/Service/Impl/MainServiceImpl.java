@@ -5,6 +5,7 @@ import com.server.app.AppServer.Service.MainService;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,8 @@ public class MainServiceImpl implements MainService {
 
     private static final Logger LOGGER = Logger.getLogger(MainServiceImpl.class.getName());
 
+    @Value("${local}")
+    private String conn;
     private static final Map<String, String> sm = new HashMap<>();
     private static final Map<String, String> rm = new HashMap<>();
 
@@ -39,11 +42,22 @@ public class MainServiceImpl implements MainService {
                 public void run() {
                     sm.remove(reqData.getSender().getId());
                     rm.remove(reqData.getReceiver().getId());
-                    // TODO: Give disconnect alert to sender & receiver
+                    LOGGER.info("Disconnecting Sender. [Reason: Receiver not found for 2min]");
+                    // Give disconnect alert to sender
+                    try {
+                        String url = conn + reqData.getSender().getAddress() + "/fshClient/s/disconnectAck";
+                        Request req = new Request.Builder()
+                                .url(url)
+                                .build();
+                        client.newCall(req).execute();
+                    } catch (Exception ex) {
+                        LOGGER.info(ex.toString());
+                        ex.printStackTrace();
+                    }
                 }
             };
             t = new Timer();
-            t.schedule(removeMapEntries, 1000*120);
+            t.schedule(removeMapEntries, 1000*120); // 2min timer
             return ResponseEntity.status(HttpStatus.OK).body("ACK");
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NACK: Incorrect with Request body.");
@@ -53,9 +67,10 @@ public class MainServiceImpl implements MainService {
     public ResponseEntity<?> reqSender(ReqData reqData) {
         if(reqData != null && reqData.getSender() != null && reqData.getReceiver() != null) {
             if(rm.containsKey(reqData.getReceiver().getId()) && rm.get(reqData.getReceiver().getId()).equals(reqData.getSender().getId())) {
+                t.cancel();
                 // Notify sender that receiver is available
                 try {
-                    String url = "http://" + sm.get(reqData.getSender().getId()) + "/fshClient/s/connectionAck";
+                    String url = conn + sm.get(reqData.getSender().getId()) + "/fshClient/s/connectionAck";
                     Request req = new Request.Builder()
                             .url(url)
                             .build();

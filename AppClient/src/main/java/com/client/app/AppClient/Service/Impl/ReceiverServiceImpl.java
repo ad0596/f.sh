@@ -23,6 +23,8 @@ public class ReceiverServiceImpl implements ReceiverService {
     private String fileDir = null;
     @Value("${serverAddress}")
     private String serverAddress = null;
+    @Value("${local}")
+    private String conn;
 
     private boolean isConnected = false;
     private String fileName;
@@ -35,16 +37,16 @@ public class ReceiverServiceImpl implements ReceiverService {
         if(isConnected)
             ResponseEntity.status(HttpStatus.OK).body("ACK: Already Connected.");
         //logic to req server to find sender
-        String url = "http://" + serverAddress + "/fshServer/reqSender";
+        String url = conn + serverAddress + "/fshServer/reqSender";
         String reqDataJson = rcvrReqData.toString();
         RequestBody reqBody = RequestBody.create(reqDataJson, MediaType.parse("application/json"));
         try {
             Request req = new Request.Builder()
                     .url(url)
                     .post(reqBody).build();
-            Response response = client.newCall(req).execute();
+            Response resp = client.newCall(req).execute();
             isConnected = true;
-            return ResponseEntity.status(response.code()).body(response.body().string());
+            return ResponseEntity.status(resp.code()).body(resp.body().string());
         } catch (Exception ex) {
             LOGGER.info(ex.toString());
             ex.printStackTrace();
@@ -65,7 +67,12 @@ public class ReceiverServiceImpl implements ReceiverService {
     public ResponseEntity<?> shareFileInfo(FileInfo fileInfo) {
         this.fileName = fileInfo.getFileName();
         this.fileSize = fileInfo.getFileSize();
-        // TODO: Evaluate valid & unique fileName to avoid overwrite
+        // set unique name for file in existing directory
+        File file = new File(fileDir + fileName);
+        while(file.exists()) {
+            fileName = "_" + fileName;
+            file = new File(fileDir + fileName);
+        }
         return ResponseEntity.status(HttpStatus.OK).body("ACK");
     }
 
@@ -103,11 +110,21 @@ public class ReceiverServiceImpl implements ReceiverService {
     }
 
     @Override
+    public ResponseEntity<?> finishFsAlert() {
+        if(!isConnected) {
+            LOGGER.info("finishFsAlert NOT_ALLOWED. Not connected with receiver.");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("NACK: Not connected.");
+        }
+        LOGGER.info("F.SH finished.");
+        return ResponseEntity.status(HttpStatus.OK).body("ACK");
+    }
+
+    @Override
     public ResponseEntity<?> disconnect(User user) {
         if(!isConnected)
             return ResponseEntity.status(HttpStatus.OK).body("ACK: Already Disconnected.");
         try {
-            String url = "http://" + user.getAddress() + "/fshClient/disconnectAckS";
+            String url = conn + user.getAddress() + "/fshClient/disconnectAckS";
             isConnected = false;
             Request req = new Request.Builder()
                     .url(url)

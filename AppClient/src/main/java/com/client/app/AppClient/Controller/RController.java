@@ -51,8 +51,14 @@ public class RController {
     // Hit by SENDER
     @GetMapping(path = "/stopFsAlert", produces = "application/json")
     public ResponseEntity<?> stopFsAlert() {
-        LOGGER.info("invoked Endpoint : '/stopFsAlert'");
+        LOGGER.info("Sender invoked Endpoint : '/stopFsAlert'");
         return receiverService.stopFsAlert();
+    }
+
+    @GetMapping(path = "/finishFsAlert", produces = "application/json")
+    public ResponseEntity<?> finishFsAlert() {
+        LOGGER.info("Sender invoked Endoint : '/finishFsAlert'");
+        return receiverService.finishFsAlert();
     }
 
     // RECEIVER

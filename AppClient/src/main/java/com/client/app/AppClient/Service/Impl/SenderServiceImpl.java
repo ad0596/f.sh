@@ -26,6 +26,8 @@ public class SenderServiceImpl implements SenderService {
 
     @Value("${serverAddress}")
     private String serverAddress = null;
+    @Value("${local}")
+    private String conn;
 
     private int kb = 4;
     private boolean isConnected = false;
@@ -36,15 +38,15 @@ public class SenderServiceImpl implements SenderService {
         if(isConnected)
             return ResponseEntity.status(HttpStatus.OK).body("ACK: Already connected.");
         //logic to send req to server for receiver
-        String url = "http://" + serverAddress +"/fshServer/reqReceiver";
+        String url = conn + serverAddress +"/fshServer/reqReceiver";
         String reqDataJson = senderReqData.toString();
         RequestBody reqBody = RequestBody.create(reqDataJson, MediaType.parse("application/json"));
         try {
             Request req = new Request.Builder()
                     .url(url)
                     .post(reqBody).build();
-            Response response = client.newCall(req).execute();
-            return ResponseEntity.status(response.code()).body(response.body().string());
+            Response resp = client.newCall(req).execute();
+            return ResponseEntity.status(resp.code()).body(resp.body().string());
         } catch (Exception ex) {
             LOGGER.info(ex.toString());
             ex.printStackTrace();
@@ -78,7 +80,7 @@ public class SenderServiceImpl implements SenderService {
         if(resp.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR || resp.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE)
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("NACK: Failed to share fileInfo.");
         LOGGER.info("Initiating File Sharing.");
-        // TODO: Notify client (both Sender(coz req will be async -- note: maybe do it in catch-InterruptedException block) & receiver) about FS completion
+
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         Callable<ResponseEntity<?>> callable = new Callable<ResponseEntity<?>>() {
             @Override
@@ -92,7 +94,8 @@ public class SenderServiceImpl implements SenderService {
             return ResponseEntity.status(futureTask.get().getStatusCode()).body(futureTask.get().getBody().toString());
         } catch (Exception ex) {
             LOGGER.info(ex.toString());
-            ex.printStackTrace();
+            if(!ex.toString().contains("CancellationException") && !ex.toString().contains("InterruptedIOException"))
+                ex.printStackTrace();
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("NACK: " + ex);
         }
         return ResponseEntity.status(HttpStatus.OK).body("ACK");
@@ -106,24 +109,24 @@ public class SenderServiceImpl implements SenderService {
         String fileName = fshReq.getFilePath().substring(fshReq.getFilePath().lastIndexOf("/")+1);
         File file = new File(fshReq.getFilePath());
         long fileSize = file.length();
-        // set kb factor for fileSize >= 1GB
-        if(fileSize >= 1000000)
+        // set kb factor for large files
+        if(fileSize >= 1000000) // 1GB+
             kb = (int)(fileSize/2000);
         try {
-            String url = "http://" + fshReq.getReceiver().getAddress() + "/fshClient/r/shareFileInfo";
+            String url = conn + fshReq.getReceiver().getAddress() + "/fshClient/r/shareFileInfo";
             FileInfo fileInfo = new FileInfo(fileName, fileSize);
             RequestBody reqBody = RequestBody.create(fileInfo.toString(), MediaType.parse("application/json"));
             Request req = new Request.Builder()
                     .url(url)
                     .post(reqBody)
                     .build();
-            Response response = client.newCall(req).execute();
-            String respContent = response.body().string();
+            Response resp = client.newCall(req).execute();
+            String respContent = resp.body().string();
             if(respContent.contains("NACK")) {
                 LOGGER.info("Failed to share file info with receiver.");
             }
             LOGGER.info("Sent File info to Receiver.");
-            return ResponseEntity.status(response.code()).body(respContent);
+            return ResponseEntity.status(resp.code()).body(respContent);
         } catch (Exception ex) {
             LOGGER.info(ex.toString());
             ex.printStackTrace();
@@ -146,14 +149,14 @@ public class SenderServiceImpl implements SenderService {
             Instant start = Instant.now();
             while (bufferedInputStream.read(shard, 0, shard.length) != -1) {
                 //logic to send this file shard to receiver
-                String url = "http://" + fshReq.getReceiver().getAddress() + "/fshClient/r/getFileShard";
+                String url = conn + fshReq.getReceiver().getAddress() + "/fshClient/r/getFileShard";
                 Request req = new Request.Builder()
                         .url(url)
                         .post(reqBody).build();
 
-                Response response = client.newCall(req).execute();
+                Response resp = client.newCall(req).execute();
 
-                if(response.body().string().contains("NACK")) {
+                if(resp.body().string().contains("NACK")) {
                     LOGGER.info("F.SH failure at receiver's end.");
                     return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("NACK: F.SH failure at receiver's end.");
                 }
@@ -178,11 +181,11 @@ public class SenderServiceImpl implements SenderService {
                 futureTask.cancel(true);
         LOGGER.info("F.SH stopped.");
         try {
-            String url = "http://" + user.getAddress() + "/fshClient/r/stopFsAlert";
-            Request request = new Request.Builder()
+            String url = conn + user.getAddress() + "/fshClient/r/stopFsAlert";
+            Request req = new Request.Builder()
                     .url(url)
                     .build();
-            Response resp = client.newCall(request).execute();
+            Response resp = client.newCall(req).execute();
             return ResponseEntity.status(resp.code()).body(resp.body().string());
         }  catch (Exception ex) {
             LOGGER.info(ex.toString());
@@ -196,7 +199,7 @@ public class SenderServiceImpl implements SenderService {
         if(!isConnected)
             return ResponseEntity.status(HttpStatus.OK).body("ACK: Already Disconnected.");
         try {
-            String url = "http://" + user.getAddress() + "/fshClient/r/disconnectAck";
+            String url = conn + user.getAddress() + "/fshClient/r/disconnectAck";
             isConnected = false;
             Request req = new Request.Builder()
                     .url(url)

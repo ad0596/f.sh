@@ -13,5 +13,6 @@ public interface ReceiverService {
     ResponseEntity<?> shareFileInfo(FileInfo fileInfo);
     ResponseEntity<?> getShard(byte [] shard);
     ResponseEntity<?> stopFsAlert();
+    ResponseEntity<?> finishFsAlert();
     ResponseEntity<?> disconnect(User user);
 }
