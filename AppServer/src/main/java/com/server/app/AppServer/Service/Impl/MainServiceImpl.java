@@ -1,9 +1,10 @@
 package com.server.app.AppServer.Service.Impl;
 
 import com.server.app.AppServer.DTO.ReqData;
-import com.server.app.AppServer.DTO.User;
 import com.server.app.AppServer.Service.MainService;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -12,9 +13,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Logger;
 
 @Component
 public class MainServiceImpl implements MainService {
+
+    private static final Logger LOGGER = Logger.getLogger(MainServiceImpl.class.getName());
 
     private static final Map<String, String> sm = new HashMap<>();
     private static final Map<String, String> rm = new HashMap<>();
@@ -35,10 +39,11 @@ public class MainServiceImpl implements MainService {
                 public void run() {
                     sm.remove(reqData.getSender().getId());
                     rm.remove(reqData.getReceiver().getId());
+                    // TODO: Give disconnect alert to sender & receiver
                 }
             };
             t = new Timer();
-            t.schedule(removeMapEntries, 1000*60);
+            t.schedule(removeMapEntries, 1000*120);
             return ResponseEntity.status(HttpStatus.OK).body("ACK");
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NACK: Incorrect with Request body.");
@@ -47,21 +52,24 @@ public class MainServiceImpl implements MainService {
     @Override
     public ResponseEntity<?> reqSender(ReqData reqData) {
         if(reqData != null && reqData.getSender() != null && reqData.getReceiver() != null) {
-            if(rm.containsKey(reqData.getReceiver().getId()) && rm.get(reqData.getReceiver().getId()).equals(reqData.getSender().getId()))
-                //TODO: Notify sender that receiver is not available & share rcvr address to sender
-
-                return ResponseEntity.status(HttpStatus.OK).body("ACK");
+            if(rm.containsKey(reqData.getReceiver().getId()) && rm.get(reqData.getReceiver().getId()).equals(reqData.getSender().getId())) {
+                // Notify sender that receiver is available
+                try {
+                    String url = "http://" + sm.get(reqData.getSender().getId()) + "/fshClient/s/connectionAck";
+                    Request req = new Request.Builder()
+                            .url(url)
+                            .build();
+                    Response resp = client.newCall(req).execute();
+                    return ResponseEntity.status(resp.code()).body(resp.body().string());
+                } catch (Exception ex) {
+                    LOGGER.info(ex.toString());
+                    ex.printStackTrace();
+                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("NACK: Sender not available.");
+                }
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("NACK: Sender not available.");
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NACK: Incorrect with Request body.");
-    }
-
-    @Override
-    public ResponseEntity<?> disconnect(User user) {
-        if(user != null && user.getId() != null) {
-            // TODO: Implement disconnect logic
-            return ResponseEntity.status(HttpStatus.OK).body("ACK");
-        }
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("NACK: Error while disconnecting.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("NACK: Incorrect Request-Body.");
     }
 
 }
