@@ -1,10 +1,9 @@
 package com.server.app.AppServer.Service.Impl;
 
 import com.server.app.AppServer.DTO.ReqData;
+import com.server.app.AppServer.DTO.User;
 import com.server.app.AppServer.Service.MainService;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,14 +67,26 @@ public class MainServiceImpl implements MainService {
         if(reqData != null && reqData.getSender() != null && reqData.getReceiver() != null) {
             if(rm.containsKey(reqData.getReceiver().getId()) && rm.get(reqData.getReceiver().getId()).equals(reqData.getSender().getId())) {
                 t.cancel();
+                String reqDataJson = reqData.getReceiver().toString();
+                RequestBody reqBody = RequestBody.create(reqDataJson, MediaType.parse("application/json"));
                 // Notify sender that receiver is available
                 try {
                     String url = conn + sm.get(reqData.getSender().getId()) + "/fshClient/s/connectionAck";
                     Request req = new Request.Builder()
                             .url(url)
-                            .build();
+                            .post(reqBody).build();
                     Response resp = client.newCall(req).execute();
-                    return ResponseEntity.status(resp.code()).body(resp.body().string());
+                    int respCode = resp.code();
+                    String respBody = resp.body().string();
+                    if(respCode == 200) {
+                        User sndr = new User();
+                        sndr.setId(reqData.getSender().getId());
+                        sndr.setAddress(sm.get(reqData.getSender().getId()));
+                        sm.remove(reqData.getSender().getId());
+                        rm.remove(reqData.getReceiver().getId());
+                        return ResponseEntity.status(respCode).body(sndr.toString());
+                    } else
+                        return ResponseEntity.status(respCode).body(respBody);
                 } catch (Exception ex) {
                     LOGGER.info(ex.toString());
                     ex.printStackTrace();

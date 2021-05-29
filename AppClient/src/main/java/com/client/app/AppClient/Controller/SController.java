@@ -1,6 +1,5 @@
 package com.client.app.AppClient.Controller;
 
-import com.client.app.AppClient.DTO.FshReq;
 import com.client.app.AppClient.DTO.ReqData;
 import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.SenderService;
@@ -27,10 +26,10 @@ public class SController {
     }
 
     // Hit by SERVER
-    @GetMapping(path = "/connectionAck")
-    public ResponseEntity<?> connectionAck() {
+    @PostMapping(path = "/connectionAck")
+    public ResponseEntity<?> connectionAck(@RequestBody User rcvr) {
         LOGGER.info("Server Invoked Endpoint: '/connectionAck'");
-        return senderService.connectionAck();
+        return senderService.connectionAck(rcvr);
     }
 
     // Hit by RECEIVER
@@ -41,24 +40,24 @@ public class SController {
     }
 
     // SENDER
-    @PostMapping(path = "/initFS", consumes = "application/json")
-    public ResponseEntity<?> initFS(@RequestBody FshReq fshReq) {
+    @PostMapping(path = "/initFS", consumes = "text/plain")
+    public ResponseEntity<?> initFS(@RequestBody String filePath) {
         LOGGER.info("Invoked EndPoint : '/shareFile'");
-        return senderService.initFS(fshReq);
+        return senderService.initFS(filePath);
     }
 
     // SENDER
-    @PostMapping(path = "/stopFS", consumes = "application/json", produces = "application/json")
-    public ResponseEntity<?> stopFS(@RequestBody  User user) {
+    @GetMapping(path = "/stopFS", produces = "application/json")
+    public ResponseEntity<?> stopFS() {
         LOGGER.info("Invoked Endpoint : '/stopFS'");
-        return senderService.stopFS(user);
+        return senderService.stopFS();
     }
 
     // SENDER
-    @PostMapping(path =  "/disconnect", consumes = "application/json")
-    public ResponseEntity<?> disconnect(@RequestBody User user) {
+    @GetMapping(path =  "/disconnect")
+    public ResponseEntity<?> disconnect() {
         LOGGER.info("Invoked EndPoint : '/disconnect'");
-        return senderService.disconnect(user);
+        return senderService.disconnect();
     }
 
 }

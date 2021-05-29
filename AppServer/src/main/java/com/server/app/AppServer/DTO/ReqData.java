@@ -12,6 +12,12 @@ public class ReqData implements Serializable {
     private User sender;
     private User receiver;
 
+    public ReqData(){}
+    public ReqData(User sender, User receiver) {
+        this.sender = sender;
+        this.receiver = receiver;
+    }
+
     public User getSender() {
         return sender;
     }

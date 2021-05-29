@@ -10,11 +10,12 @@ import java.io.Serializable;
 
 public class User implements Serializable {
 
-    private static final long serialVersionUID = -4402865447825515728L;
+    private static final long serialVersionUID = -5096052166411964407L;
     private String id;
     private UserType type;
     private String address;
 
+    public User() {}
     public User(String id, UserType type, String address) {
         this.id = id;
         this.type = type;

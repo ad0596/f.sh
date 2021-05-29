@@ -2,7 +2,6 @@ package com.client.app.AppClient.Controller;
 
 import com.client.app.AppClient.DTO.FileInfo;
 import com.client.app.AppClient.DTO.ReqData;
-import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.ReceiverService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -34,14 +33,14 @@ public class RController {
         return receiverService.disconnectAck();
     }
 
-    // RECEIVER
+    // Hit by SENDER
     @PostMapping(path = "/shareFileInfo", consumes = "application/json", produces = "application/json")
     public ResponseEntity<?> shareFileInfo(@RequestBody FileInfo fileInfo) {
         LOGGER.info("Invoked Endpoint : '/shareFileInfo'");
         return receiverService.shareFileInfo(fileInfo);
     }
 
-    // RECEIVER
+    // Hit By SENDER
     @PostMapping(path = "/getFileShard", produces = "application/json")
     public ResponseEntity<?> getFileShard(@RequestBody byte [] shard, HttpServletRequest request) {
         String fileName = request.getHeader("fileName");
@@ -55,6 +54,7 @@ public class RController {
         return receiverService.stopFsAlert();
     }
 
+    // Hit bt SENDER
     @GetMapping(path = "/finishFsAlert", produces = "application/json")
     public ResponseEntity<?> finishFsAlert() {
         LOGGER.info("Sender invoked Endoint : '/finishFsAlert'");
@@ -62,9 +62,9 @@ public class RController {
     }
 
     // RECEIVER
-    @PostMapping(path =  "/disconnect", consumes = "application/json")
-    public ResponseEntity<?> disconnect(@RequestBody User user) {
+    @GetMapping(path =  "/disconnect")
+    public ResponseEntity<?> disconnect() {
         LOGGER.info("Invoked EndPoint : '/disconnect'");
-        return receiverService.disconnect(user);
+        return receiverService.disconnect();
     }
 }

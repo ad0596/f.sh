@@ -4,6 +4,7 @@ import com.client.app.AppClient.DTO.FileInfo;
 import com.client.app.AppClient.DTO.ReqData;
 import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.ReceiverService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -27,6 +28,7 @@ public class ReceiverServiceImpl implements ReceiverService {
     private String conn;
 
     private boolean isConnected = false;
+    private User sndrInfo = new User();
     private String fileName;
     private long fileSize;
 
@@ -45,8 +47,15 @@ public class ReceiverServiceImpl implements ReceiverService {
                     .url(url)
                     .post(reqBody).build();
             Response resp = client.newCall(req).execute();
-            isConnected = true;
-            return ResponseEntity.status(resp.code()).body(resp.body().string());
+            int respCode = resp.code();
+            String respBody = resp.body().string();
+            if(respCode == 200) {
+                isConnected = true;
+                ObjectMapper mapper = new ObjectMapper();
+                sndrInfo = mapper.readValue(respBody, User.class);
+                return ResponseEntity.status(respCode).body("ACK");
+            } else
+                return ResponseEntity.status(respCode).body(respBody);
         } catch (Exception ex) {
             LOGGER.info(ex.toString());
             ex.printStackTrace();
@@ -120,11 +129,11 @@ public class ReceiverServiceImpl implements ReceiverService {
     }
 
     @Override
-    public ResponseEntity<?> disconnect(User user) {
+    public ResponseEntity<?> disconnect() {
         if(!isConnected)
             return ResponseEntity.status(HttpStatus.OK).body("ACK: Already Disconnected.");
         try {
-            String url = conn + user.getAddress() + "/fshClient/disconnectAckS";
+            String url = conn + sndrInfo.getAddress() + "/fshClient/s/disconnectAck";
             isConnected = false;
             Request req = new Request.Builder()
                     .url(url)

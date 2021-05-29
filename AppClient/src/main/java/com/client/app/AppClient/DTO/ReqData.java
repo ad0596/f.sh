@@ -8,9 +8,15 @@ import java.io.Serializable;
 
 public class ReqData implements Serializable {
 
-    private static final long serialVersionUID = -6074943763293123482L;
+    private static final long serialVersionUID = -6991893515861426038L;
     private User sender;
     private User receiver;
+
+    public ReqData(){}
+    public ReqData(User sender, User receiver) {
+        this.sender = sender;
+        this.receiver = receiver;
+    }
 
     public User getSender() {
         return sender;

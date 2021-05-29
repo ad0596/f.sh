@@ -1,7 +1,6 @@
 package com.client.app.AppClient.Service.Impl;
 
 import com.client.app.AppClient.DTO.FileInfo;
-import com.client.app.AppClient.DTO.FshReq;
 import com.client.app.AppClient.DTO.ReqData;
 import com.client.app.AppClient.DTO.User;
 import com.client.app.AppClient.Service.SenderService;
@@ -11,10 +10,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.logging.Logger;
 
 
@@ -31,6 +36,7 @@ public class SenderServiceImpl implements SenderService {
 
     private int kb = 4;
     private boolean isConnected = false;
+    private User rcvrInfo;
     private FutureTask<ResponseEntity<?>> futureTask;
 
     @Override
@@ -55,9 +61,10 @@ public class SenderServiceImpl implements SenderService {
     }
 
     @Override
-    public ResponseEntity<?> connectionAck() {
+    public ResponseEntity<?> connectionAck(User rcvr) {
         isConnected = true;
         LOGGER.info("Connected");
+        rcvrInfo = rcvr;
         return ResponseEntity.status(HttpStatus.OK).body("ACK");
     }
 
@@ -71,12 +78,12 @@ public class SenderServiceImpl implements SenderService {
     }
 
     @Override
-    public ResponseEntity<?> initFS(FshReq fshReq) {
+    public ResponseEntity<?> initFS(String filePath) {
         if(!isConnected) {
             LOGGER.info("initFS NOT_ALLOWED. Not connected with receiver.");
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("NACK: Not connected.");
         }
-        ResponseEntity resp = shareFileInfo(fshReq);
+        ResponseEntity resp = shareFileInfo(filePath);
         if(resp.getStatusCode() == HttpStatus.INTERNAL_SERVER_ERROR || resp.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE)
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("NACK: Failed to share fileInfo.");
         LOGGER.info("Initiating File Sharing.");
@@ -85,7 +92,7 @@ public class SenderServiceImpl implements SenderService {
         Callable<ResponseEntity<?>> callable = new Callable<ResponseEntity<?>>() {
             @Override
             public ResponseEntity<?> call() throws Exception {
-                return shareFile(fshReq);
+                return shareFile(filePath);
             }
         };
         futureTask = new FutureTask<>(callable);
@@ -101,19 +108,19 @@ public class SenderServiceImpl implements SenderService {
         return ResponseEntity.status(HttpStatus.OK).body("ACK");
     }
 
-    private ResponseEntity<?> shareFileInfo(FshReq fshReq) {
+    private ResponseEntity<?> shareFileInfo(String filePath) {
         if(!isConnected) {
             LOGGER.info("shareFileInfo NOT_ALLOWED. Not connected with receiver.");
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("NACK: Not connected.");
         }
-        String fileName = fshReq.getFilePath().substring(fshReq.getFilePath().lastIndexOf("/")+1);
-        File file = new File(fshReq.getFilePath());
+        String fileName = filePath.substring(filePath.lastIndexOf("/")+1);
+        File file = new File(filePath);
         long fileSize = file.length();
         // set kb factor for large files
         if(fileSize >= 1000000) // 1GB+
             kb = (int)(fileSize/2000);
         try {
-            String url = conn + fshReq.getReceiver().getAddress() + "/fshClient/r/shareFileInfo";
+            String url = conn + rcvrInfo.getAddress() + "/fshClient/r/shareFileInfo";
             FileInfo fileInfo = new FileInfo(fileName, fileSize);
             RequestBody reqBody = RequestBody.create(fileInfo.toString(), MediaType.parse("application/json"));
             Request req = new Request.Builder()
@@ -134,14 +141,14 @@ public class SenderServiceImpl implements SenderService {
         }
     }
 
-    private ResponseEntity<?> shareFile(FshReq fshReq) {
+    private ResponseEntity<?> shareFile(String filePath) {
         if(!isConnected) {
             LOGGER.info("shareFile NOT_ALLOWED. Not connected with receiver.");
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("NACK: Not connected.");
         }
         // logic to upload file - sharding - sending shards to receiver
         try {
-            InputStream inputStream = new FileInputStream(fshReq.getFilePath());
+            InputStream inputStream = new FileInputStream(filePath);
             BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
 
             byte[] shard = new byte[kb * 1024];
@@ -149,7 +156,7 @@ public class SenderServiceImpl implements SenderService {
             Instant start = Instant.now();
             while (bufferedInputStream.read(shard, 0, shard.length) != -1) {
                 //logic to send this file shard to receiver
-                String url = conn + fshReq.getReceiver().getAddress() + "/fshClient/r/getFileShard";
+                String url = conn + rcvrInfo.getAddress() + "/fshClient/r/getFileShard";
                 Request req = new Request.Builder()
                         .url(url)
                         .post(reqBody).build();
@@ -172,7 +179,7 @@ public class SenderServiceImpl implements SenderService {
     }
 
     @Override
-    public ResponseEntity<?> stopFS(User user) {
+    public ResponseEntity<?> stopFS() {
         if(!isConnected) {
             LOGGER.info("stopFS NOT_ALLOWED. Not connected with receiver.");
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("NACK: Not connected.");
@@ -181,7 +188,7 @@ public class SenderServiceImpl implements SenderService {
                 futureTask.cancel(true);
         LOGGER.info("F.SH stopped.");
         try {
-            String url = conn + user.getAddress() + "/fshClient/r/stopFsAlert";
+            String url = conn + rcvrInfo.getAddress() + "/fshClient/r/stopFsAlert";
             Request req = new Request.Builder()
                     .url(url)
                     .build();
@@ -195,11 +202,11 @@ public class SenderServiceImpl implements SenderService {
     }
 
     @Override
-    public ResponseEntity<?> disconnect(User user) {
+    public ResponseEntity<?> disconnect() {
         if(!isConnected)
             return ResponseEntity.status(HttpStatus.OK).body("ACK: Already Disconnected.");
         try {
-            String url = conn + user.getAddress() + "/fshClient/r/disconnectAck";
+            String url = conn + rcvrInfo.getAddress() + "/fshClient/r/disconnectAck";
             isConnected = false;
             Request req = new Request.Builder()
                     .url(url)

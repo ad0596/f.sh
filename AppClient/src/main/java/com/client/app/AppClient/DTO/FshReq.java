@@ -8,9 +8,15 @@ import java.io.Serializable;
 
 public class FshReq implements Serializable {
 
-    private static final long serialVersionUID = 6384761762150240809L;
+    private static final long serialVersionUID = 4189969640734395135L;
     private User receiver;
     private String filePath;
+
+    public FshReq(){}
+    public FshReq(User receiver, String filePath) {
+        this.receiver = receiver;
+        this.filePath = filePath;
+    }
 
     public User getReceiver() {
         return receiver;
