@@ -1,0 +1,10 @@
+  ______        _____   _    _
+ |  ____|      / ____| | |  | |
+ | |__        | (___   | |__| |
+ |  __|        \___ \  |  __  |
+ | |       _   ____) | | |  | |
+ |_|      (_) |_____/  |_|  |_|
+
+
+${application.title} ${application.version} [${application.description}]
+by @dz-adman
