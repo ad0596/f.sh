@@ -2,6 +2,7 @@ package com.client.app.FshClient.Controller;
 
 import com.client.app.FshClient.DTO.FileInfo;
 import com.client.app.FshClient.DTO.ReqData;
+import com.client.app.FshClient.Service.AppService.CommonService;
 import com.client.app.FshClient.Service.AppService.ReceiverService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,13 +18,24 @@ public class RController {
     private static final Logger LOGGER = Logger.getLogger(RController.class.getName());
 
     @Autowired
-    ReceiverService receiverService;
+    private CommonService commonService;
+    @Autowired
+    private ReceiverService receiverService;
 
+    // RECEIVER
+    @GetMapping(path = "/networkInfo")
+    public ResponseEntity<?> networkInfo() {
+        LOGGER.info("Invoked Endpoint: '/networkInfo'");
+        return commonService.networkInfo();
+    }
+
+    // RECEIVER
     @PostMapping(path = "/setDestDirPath", consumes = "text/plain")
     public ResponseEntity<?> setDestDirPath(@RequestBody String destDirPath) {
         LOGGER.info("Invoked Endpoint : '/setDestDirPath'");
         return receiverService.setDestDirPath(destDirPath);
     }
+
     // RECEIVER
     @PostMapping(path = "/reqSender", consumes = "application/json", produces = "application/json")
     public ResponseEntity<?> reqSender(@RequestBody ReqData rcvrReqData) {

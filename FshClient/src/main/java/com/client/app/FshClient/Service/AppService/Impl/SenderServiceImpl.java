@@ -6,11 +6,10 @@ import com.client.app.FshClient.DTO.User;
 import com.client.app.FshClient.Service.AppService.SenderService;
 import com.client.app.FshClient.Service.ShellService.ConsoleService;
 import com.client.app.FshClient.Service.ShellService.FshPromptProvider;
-import com.client.app.FshClient.Util.UserConnectionEvent;
+import com.client.app.FshClient.Util.UserType;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -35,15 +34,13 @@ public class SenderServiceImpl implements SenderService {
     private final OkHttpClient client = new OkHttpClient();
 
     @Autowired
-    private ApplicationEventPublisher eventPublisher;
-    @Autowired
     private ConsoleService console;
     @Autowired
     private FshPromptProvider promptProvider;
 
     @Value("${serverAddress}")
     private String serverAddress = null;
-    @Value("${local}")
+    @Value("${conn}")
     private String conn;
 
     private int kb = 4;
@@ -91,8 +88,7 @@ public class SenderServiceImpl implements SenderService {
         // Shell output
         console.writeInfo("Connected");
         // connection event for shell
-        UserConnectionEvent connectionEvent = new UserConnectionEvent(this, this.isConnected);
-        eventPublisher.publishEvent(connectionEvent);
+        console.updateByConnectionEvent(UserType.SENDER, this.isConnected);
         console.write(promptProvider.getPrompt());
 
         return ResponseEntity.status(HttpStatus.OK).body("ACK");
@@ -108,8 +104,7 @@ public class SenderServiceImpl implements SenderService {
         // Shell output
         console.writeInfo("Disconnected");
         // connection event for shell
-        UserConnectionEvent connectionEvent = new UserConnectionEvent(this, this.isConnected);
-        eventPublisher.publishEvent(connectionEvent);
+        console.updateByConnectionEvent(UserType.SENDER, this.isConnected);
         console.write(promptProvider.getPrompt());
 
         return ResponseEntity.status(HttpStatus.OK).body("ACK");
@@ -149,7 +144,7 @@ public class SenderServiceImpl implements SenderService {
                         }
                     }
                     else if(respBody.contains("ConnectException")) {
-                        setConnectionStatus(false);//isConnected = false;
+                        setConnectionStatus(false);
                         console.writeInfo("F.SH failed\nReceiver Disconnected Abruptly");
                         console.write(promptProvider.getPrompt());
                     }

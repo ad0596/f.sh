@@ -6,12 +6,11 @@ import com.client.app.FshClient.DTO.User;
 import com.client.app.FshClient.Service.AppService.ReceiverService;
 import com.client.app.FshClient.Service.ShellService.ConsoleService;
 import com.client.app.FshClient.Service.ShellService.FshPromptProvider;
-import com.client.app.FshClient.Util.UserConnectionEvent;
+import com.client.app.FshClient.Util.UserType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -26,8 +25,6 @@ public class ReceiverServiceImpl implements ReceiverService {
     private static final Logger LOGGER = Logger.getLogger(ReceiverServiceImpl.class.getName());
 
     @Autowired
-    private ApplicationEventPublisher eventPublisher;
-    @Autowired
     private ConsoleService console;
     @Autowired
     private FshPromptProvider promptProvider;
@@ -36,7 +33,7 @@ public class ReceiverServiceImpl implements ReceiverService {
     private String fileDir = null;
     @Value("${serverAddress}")
     private String serverAddress = null;
-    @Value("${local}")
+    @Value("${conn}")
     private String conn;
 
     private boolean isConnected = false;
@@ -60,10 +57,15 @@ public class ReceiverServiceImpl implements ReceiverService {
     public ResponseEntity<?> setDestDirPath(String destDirPath) {
         this.fileDir = destDirPath;
         File directory = new File(fileDir);
-        if (! directory.exists()){
-            directory.mkdirs();
+        boolean dirExists = true;
+        if (!directory.exists()){
+            dirExists = false;
+            dirExists = directory.mkdirs();
         }
-        return ResponseEntity.status(HttpStatus.OK).body("ACK");
+        if(dirExists)
+            return ResponseEntity.status(HttpStatus.OK).body("ACK");
+        else
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("NACK: Unable to create directory (Invalid Path)");
     }
 
     @Override
@@ -105,8 +107,7 @@ public class ReceiverServiceImpl implements ReceiverService {
         // Shell output
         console.writeInfo("Disconnected");
         // connection event for shell
-        UserConnectionEvent connectionEvent = new UserConnectionEvent(this, this.isConnected);
-        eventPublisher.publishEvent(connectionEvent);
+        console.updateByConnectionEvent(UserType.RECEIVER, this.isConnected);
         console.write(promptProvider.getPrompt());
 
         return ResponseEntity.status(HttpStatus.OK).body("ACK");

@@ -7,7 +7,7 @@ public enum UserType {
     SENDER(1), RECEIVER(0);
 
     private int value;
-    private static Map map = new HashMap<>();
+    private static Map<Integer, UserType> map = new HashMap<>();
 
     private UserType(int value) {
         this.value = value;

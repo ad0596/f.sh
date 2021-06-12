@@ -1,13 +1,27 @@
 package com.client.app.FshClient.Service.ShellService.Impl;
 
+import com.client.app.FshClient.Service.AppService.ReceiverService;
+import com.client.app.FshClient.Service.AppService.SenderService;
 import com.client.app.FshClient.Service.ShellService.ConsoleService;
+import com.client.app.FshClient.Util.UserConnectionEvent;
+import com.client.app.FshClient.Util.UserType;
 import org.jline.utils.AttributedString;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.io.PrintStream;
 
 @Component
 public class ConsoleServiceImpl implements ConsoleService {
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+    @Autowired
+    private SenderService senderService;
+    @Autowired
+    private ReceiverService receiverService;
+
     private final static String ANSI_RESET = "\u001b[0m";
     private final static String ANSI_BLACK = "\u001b[30m";
     private final static String ANSI_RED = "\u001b[31m";
@@ -62,5 +76,15 @@ public class ConsoleServiceImpl implements ConsoleService {
             this.out.print(ANSI_RESET);
         }
         this.out.println();
+    }
+
+    @Override
+    public void updateByConnectionEvent(UserType userType, boolean connectionStatus) {
+        UserConnectionEvent connectionEvent = new UserConnectionEvent(this, connectionStatus);
+        eventPublisher.publishEvent(connectionEvent);
+        if(userType == UserType.SENDER)
+            senderService.setConnectionStatus(connectionStatus);
+        if(userType == UserType.RECEIVER)
+            receiverService.setConnectionStatus(connectionStatus);
     }
 }

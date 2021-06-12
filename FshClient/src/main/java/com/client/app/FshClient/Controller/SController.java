@@ -2,6 +2,7 @@ package com.client.app.FshClient.Controller;
 
 import com.client.app.FshClient.DTO.ReqData;
 import com.client.app.FshClient.DTO.User;
+import com.client.app.FshClient.Service.AppService.CommonService;
 import com.client.app.FshClient.Service.AppService.SenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,16 @@ public class SController {
     private static final Logger LOGGER = Logger.getLogger(SController.class.getName());
 
     @Autowired
-    SenderService senderService;
+    private CommonService commonService;
+    @Autowired
+    private SenderService senderService;
+
+    // SENDER
+    @GetMapping(path = "/networkInfo")
+    public ResponseEntity<?> networkInfo() {
+        LOGGER.info("Invoked Endpoint: '/networkInfo'");
+        return commonService.networkInfo();
+    }
 
     // SENDER
     @PostMapping(path = "/reqReceiver", consumes = "application/json", produces = "application/json")

@@ -6,10 +6,8 @@ import com.client.app.FshClient.Service.AppService.ReceiverService;
 import com.client.app.FshClient.Service.ShellService.ConsoleService;
 import com.client.app.FshClient.Service.ShellService.FshPromptProvider;
 import com.client.app.FshClient.Service.ShellService.ShellUserService;
-import com.client.app.FshClient.Util.UserConnectionEvent;
 import com.client.app.FshClient.Util.UserType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.shell.Availability;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -23,8 +21,6 @@ public class RCommands {
     @Autowired
     private FshPromptProvider promptProvider;
     @Autowired
-    private ApplicationEventPublisher eventPublisher;
-    @Autowired
     private ReceiverService receiverService;
     @Autowired
     private ShellUserService shellUserService;
@@ -34,6 +30,8 @@ public class RCommands {
         String resp = receiverService.setDestDirPath(path).getBody().toString();
         if(resp.equals("ACK"))
             console.writeACK("Destination File Directory changed to : " + path);
+        else
+            console.writeNACK(resp);
     }
 
     @ShellMethod(value = "Look for Sender to Connect", group = "RECEIVER")
@@ -44,14 +42,12 @@ public class RCommands {
 
         String resp = receiverService.reqSender(reqData).getBody().toString();
 
-        if(resp.contains("ConnectException"))
-            console.writeNACK("F.SH connection server is down");
-        else if(resp.equals("ACK")) {
-            // connection event for shell
-            UserConnectionEvent connectionEvent = new UserConnectionEvent(this, true);
-            eventPublisher.publishEvent(connectionEvent);
+        if(resp.equals("ACK")) {
+            console.updateByConnectionEvent(UserType.RECEIVER, true);
             console.writeACK("Connected");
         }
+        else if(resp.contains("ConnectException"))
+            console.writeNACK("F.SH connection server is down");
         else
             console.writeNACK(resp);
     }
@@ -59,18 +55,14 @@ public class RCommands {
     @ShellMethod(value = "Disconnect", group = "RECEIVER")
     public void rdisconnect() {
         String resp = receiverService.disconnect().getBody().toString();
-        if(resp.contains("ConnectException")) {
-            console.writeNACK("Sender already disconnected");
-            // connection event for shell
-            UserConnectionEvent connectionEvent = new UserConnectionEvent(this, false);
-            eventPublisher.publishEvent(connectionEvent);
-            console.write(promptProvider.getPrompt());
-        }
-        else if(resp.equals("ACK")) {
+        if(resp.equals("ACK")) {
             console.writeACK("Disconnected");
-            // connection event for shell
-            UserConnectionEvent connectionEvent = new UserConnectionEvent(this, false);
-            eventPublisher.publishEvent(connectionEvent);
+            console.updateByConnectionEvent(UserType.RECEIVER, false);
+        }
+        else if(resp.contains("ConnectException")) {
+            console.writeNACK("Sender already disconnected");
+            console.updateByConnectionEvent(UserType.RECEIVER, false);
+            console.write(promptProvider.getPrompt());
         }
         else
             console.writeNACK(resp);
