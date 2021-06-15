@@ -20,7 +20,7 @@ public class MainServiceImpl implements MainService {
 
     private static final Logger LOGGER = Logger.getLogger(MainServiceImpl.class.getName());
 
-    @Value("${local}")
+    @Value("${conn}")
     private String conn;
     private static final Map<String, String> sm = new ConcurrentHashMap<>();
     private static final Map<String, String> rm = new ConcurrentHashMap<>();

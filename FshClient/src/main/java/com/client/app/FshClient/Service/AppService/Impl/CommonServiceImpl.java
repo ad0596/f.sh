@@ -41,8 +41,8 @@ public class CommonServiceImpl implements CommonService {
             LOGGER.info(ex.toString());
             LOGGER.info(ex.getStackTrace().toString());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("applicationPort: " + applicationPort + "\nlocalHost: " + localHost + "\n publicHost: " + publicHost);
+                    .body("applicationPort: " + applicationPort + "\nlocalIp: " + localHost + "\n publicIp: " + publicHost);
         }
-        return ResponseEntity.status(HttpStatus.OK).body("applicationPort: " + applicationPort + "\nlocalHost: " + localHost + "\npublicHost: " + publicHost);
+        return ResponseEntity.status(HttpStatus.OK).body("applicationPort: " + applicationPort + "\nlocalIp: " + localHost + "\npublicIp: " + publicHost);
     }
 }
