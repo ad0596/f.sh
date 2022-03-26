@@ -1,5 +1,5 @@
 # f.sh
-A P2P Cli and REST tool to share files between 2 users
+A P2P Cli tool based in REST services to share files between 2 users
 
 ## FshServer
 A simple Spring-Boot REST api that stands as an intermediate node which has only 1 job i.e. get the connection requests and share each other's connection info between 2 clients (SENDER & RECEIVER).
